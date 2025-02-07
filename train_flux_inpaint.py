@@ -931,7 +931,8 @@ def main(args):
                 batch_size   = batch["image"].shape[0]
                 
                 pixel_values = batch["image"].to(dtype=vae.dtype) # pixel_values == GT == [실제 입힐려는 옷, 사람 이미지]
-                
+
+                # 논문에선 이부분이 제외
                 # prompts = batch["caption_cloth"]
                 prompts = [""
                     f"The pair of images highlights a clothing and its styling on a model, high resolution, 4K, 8K; "
@@ -946,25 +947,30 @@ def main(args):
                 ] * len(pixel_values)
                 # prompts = ["upperbody"] * len(pixel_values)
 
-                # [zero image, mask(persong image에 옷 영역(흰색)에 대한 마스크(binary) 이미지를 의미)]
+                # 실제 입력값 - 2th
+                # [zero image, mask(persong image에 옷 영역(흰색)에 대한 마스크(binary) 이미지를 의미)] > 논문의 Fig.4와 순서가 바뀜
                 control_mask  = batch["inpaint_mask"].to(dtype=vae.dtype)
-                
-                # [입히려는 옷 이미지, 사람이미지안의 입히려는 옷 영역에 검은색인(마스크된) 이미지]
+
+                # 실제 입력값 - 1th
+                # [입히려는 옷 이미지, 사람이미지안의 입히려는 옷 영역에 검은색인(마스크된) 이미지] > 논문의 Fig.4와 순서가 바뀜
                 control_image = batch["im_mask"].to(dtype=vae.dtype) 
 
-                #
-                garment_image = batch["cloth_pure"]
+                # 입힐 옷 
+                # 참고로 pixel_values에 포함되어 있음 
+                garment_image       = batch["cloth_pure"]
                 # garment_image_0_1 = (batch["cloth_pure"] + 1.0) / 2
-                garment_image = garment_image.to(dtype=vae.dtype)
+                garment_image       = garment_image.to(dtype=vae.dtype)
                 
                 
                 # print("image_proj.shape", image_proj.shape)
 
+                # 논문에선 이부분이 제외
                 # encode batch prompts when custom prompts are provided for each image -
                 prompt_embeds, pooled_prompt_embeds, text_ids = compute_text_embeddings(
                     prompts, text_encoders, tokenizers
                 )
-                
+
+                # 
                 inpaint_cond, _, _ = prepare_fill_with_mask(
                     image_processor=image_processor,
                     mask_processor=mask_processor,
