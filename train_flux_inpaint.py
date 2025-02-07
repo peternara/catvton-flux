@@ -928,8 +928,10 @@ def main(args):
             
             with accelerator.accumulate(models_to_accumulate):
                 # vae_scale_factor = 2 ** (len(vae.config.block_out_channels))
-                batch_size = batch["image"].shape[0]
-                pixel_values = batch["image"].to(dtype=vae.dtype)
+                batch_size   = batch["image"].shape[0]
+                
+                pixel_values = batch["image"].to(dtype=vae.dtype) # pixel_values == GT == [실제 입힐려는 옷, 사람 이미지]
+                
                 # prompts = batch["caption_cloth"]
                 prompts = [""
                     f"The pair of images highlights a clothing and its styling on a model, high resolution, 4K, 8K; "
@@ -944,8 +946,13 @@ def main(args):
                 ] * len(pixel_values)
                 # prompts = ["upperbody"] * len(pixel_values)
 
-                control_mask = batch["inpaint_mask"].to(dtype=vae.dtype)
-                control_image = batch["im_mask"].to(dtype=vae.dtype)
+                # [zero image, mask(persong image에 옷 영역(흰색)에 대한 마스크(binary) 이미지를 의미)]
+                control_mask  = batch["inpaint_mask"].to(dtype=vae.dtype)
+                
+                # [입히려는 옷 이미지, 사람이미지안의 입히려는 옷 영역에 검은색인(마스크된) 이미지]
+                control_image = batch["im_mask"].to(dtype=vae.dtype) 
+
+                #
                 garment_image = batch["cloth_pure"]
                 # garment_image_0_1 = (batch["cloth_pure"] + 1.0) / 2
                 garment_image = garment_image.to(dtype=vae.dtype)
@@ -979,6 +986,7 @@ def main(args):
                     dropout = torch.nn.Dropout(p=args.dropout_prob)
                     inpaint_cond = dropout(inpaint_cond)
 
+                # pixel_values == GT == [실제 입힐려는 옷, 사람 이미지]
                 model_input = encode_images_to_latents(vae, pixel_values, weight_dtype, args.height, args.width*2)
                 
                 latent_image_ids = prepare_latents(
