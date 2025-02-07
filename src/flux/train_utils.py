@@ -6,8 +6,8 @@ def prepare_image_with_mask(
         mask_processor,
         vae,
         vae_scale_factor,
-        image,
-        mask,
+        image, # 실제 입력값 - 1th, [입히려는 옷 이미지, 사람 이미지안의 입히려는 옷 영역에 검은 색인(마스크된) 이미지] > 논문의 Fig.4와 순서가 바뀜
+        mask,  # 실제 입력값 - 2th, [zero image, mask(persong image에 옷 영역(흰색)에 대한 마스크(binary) 이미지를 의미)] > 논문의 Fig.4와 순서가 바뀜
         width,
         height,
         batch_size,
@@ -31,18 +31,21 @@ def prepare_image_with_mask(
             repeat_by = num_images_per_prompt
         image = image.repeat_interleave(repeat_by, dim=0)
         image = image.to(device=device, dtype=dtype)
-
+        
         # Prepare mask
         if isinstance(mask, torch.Tensor):
             pass
         else:
-            mask = mask_processor.preprocess(mask, height=height, width=width)
+            mask = mask_processor.preprocess(mask, height=height, width=width)  
+                
+        # 실제 입력값 - 2th, [zero image, mask(persong image에 옷 영역(흰색)에 대한 마스크(binary) 이미지를 의미)] > 논문의 Fig.4와 순서가 바뀜
         mask = mask.repeat_interleave(repeat_by, dim=0)
         mask = mask.to(device=device, dtype=dtype)
 
+        # 실제 입력값 - 1th, [입히려는 옷 이미지, 사람 이미지안의 입히려는 옷 영역에 검은 색인(마스크된) 이미지] > 논문의 Fig.4와 순서가 바뀜
         # Get masked image
         masked_image = image.clone()
-        masked_image[(mask > 0.5).repeat(1, 3, 1, 1)] = -1
+        masked_image[(mask > 0.5).repeat(1, 3, 1, 1)] = -1 # ???
 
         # Encode to latents
         image_latents = vae.encode(masked_image.to(vae.dtype)).latent_dist.sample()
