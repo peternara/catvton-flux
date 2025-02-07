@@ -110,11 +110,10 @@ class VitonHDTestDataset(data.Dataset):
         self.c_names = c_names
         self.dataroot_names = dataroot_names
     def __getitem__(self, index):
-        c_name = self.c_names[index]
-        im_name = self.im_names[index]
+        c_name  = self.c_names[index]
+        im_name = self.im_names[index]       
         
-        
-        cloth = Image.open(os.path.join(self.dataroot, self.phase, "cloth", c_name)).resize((self.width,self.height))
+        cloth      = Image.open(os.path.join(self.dataroot, self.phase, "cloth", c_name)).resize((self.width,self.height))
         cloth_pure = self.transform(cloth)
         cloth_mask = Image.open(os.path.join(self.dataroot, self.phase, "cloth-mask", c_name)).resize((self.width,self.height))
         cloth_mask = self.transform(cloth_mask)
@@ -124,10 +123,11 @@ class VitonHDTestDataset(data.Dataset):
         ).resize((self.width,self.height))
         image = self.transform(im_pil_big)
 
-        mask = Image.open(os.path.join(self.dataroot, self.phase, "agnostic-mask", im_name.replace('.jpg','_mask.png'))).resize((self.width,self.height))
-        mask = self.toTensor(mask)
-        mask = mask[:1]
-        mask = 1-mask
+        # persong image에 옷 영역(흰색)에 대한 마스크(binary) 이미지를 의미
+        mask    = Image.open(os.path.join(self.dataroot, self.phase, "agnostic-mask", im_name.replace('.jpg','_mask.png'))).resize((self.width,self.height))
+        mask    = self.toTensor(mask)
+        mask    = mask[:1]
+        mask    = 1-mask
         im_mask = image * mask
  
         pose_img = Image.open(
@@ -136,15 +136,17 @@ class VitonHDTestDataset(data.Dataset):
         pose_img = self.transform(pose_img)  # [-1,1]
  
         result = {}
-        result["c_name"] = c_name
-        result["im_name"] = im_name
+        result["c_name"]     = c_name
+        result["im_name"]    = im_name
         result["cloth_pure"] = cloth_pure
         result["cloth_mask"] = cloth_mask
         
         # Concatenate image and garment along width dimension
+        # [입히려는 옷 이미지, 사람이미지안의 입히려는 옷 영역에 검은색인(마스크된) 이미지]
         inpaint_image = torch.cat([cloth_pure, im_mask], dim=2)  # dim=2 is width dimension
         result["im_mask"] = inpaint_image
-        
+
+        # [실제 입힐려는 옷, 사람 이미지]
         GT_image = torch.cat([cloth_pure, image], dim=2)  # dim=2 is width dimension
         result["image"] = GT_image
         
