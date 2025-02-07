@@ -970,14 +970,14 @@ def main(args):
                     prompts, text_encoders, tokenizers
                 )
 
-                # 
+                # control_image, control_mask 에 대한 VAE를 적용하여 Latent 계산.
                 inpaint_cond, _, _ = prepare_fill_with_mask(
                     image_processor=image_processor,
                     mask_processor=mask_processor,
                     vae=vae,
                     vae_scale_factor=vae_scale_factor,
-                    image=control_image,
-                    mask=control_mask,
+                    image=control_image, # 실제 입력값 - 1th, [입히려는 옷 이미지, 사람 이미지안의 입히려는 옷 영역에 검은 색인(마스크된) 이미지] > 논문의 Fig.4와 순서가 바뀜
+                    mask=control_mask, # 실제 입력값 - 2th, [zero image, mask(persong image에 옷 영역(흰색)에 대한 마스크(binary) 이미지를 의미)] > 논문의 Fig.4와 순서가 바뀜
                     width=args.width*2,
                     height=args.height,
                     batch_size=batch_size,
